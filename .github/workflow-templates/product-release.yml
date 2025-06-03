@@ -1,0 +1,44 @@
+name: Product Release
+
+on:
+  workflow_call:
+    inputs:
+      release_version:
+        description: 'Version to release'
+        required: true
+        type: string
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      - name: Bump version and create tag
+        run: |
+          npm version ${{ inputs.release_version }} -m "chore(release): %s"
+      - name: Generate changelog
+        uses: mikepenz/release-changelog-builder-action@v3
+        with:
+          configuration: ".github/changelog-configuration.json"
+      - name: Package assets
+        run: zip -r release.zip .
+      - name: Upload to Gumroad
+        uses: brainops/actions-gumroad-upload@v1
+        with:
+          api_key: ${{ secrets.GUMROAD_API_KEY }}
+          product_id: ${{ secrets.GUMROAD_PRODUCT_ID }}
+          file_path: release.zip
+      - name: Notify Slack
+        uses: slackapi/slack-github-action@v1
+        with:
+          payload: |
+            {
+              "text": "🎉 New product release ${{ inputs.release_version }} is live!"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
