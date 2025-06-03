@@ -1,0 +1,27 @@
+name: Documentation Build
+
+on:
+  workflow_call:
+
+jobs:
+  build-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      - name: Install dependencies
+        run: npm ci
+      - name: Build static docs
+        run: npm run docs:build
+      - name: Generate PDF
+        run: npx markdown-pdf docs/**/*.md
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: documentation
+          path: |
+            docs/dist
+            docs/**/*.pdf
